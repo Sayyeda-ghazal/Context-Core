@@ -6,6 +6,10 @@ const LoginCard = ({
   loading,
   error,
   handleLogin,
+  email,
+  password,
+  setEmail,
+  setPassword
 }) => {
   return (
     <div className="flex-1 bg-gray-50 flex items-center justify-center">
@@ -35,7 +39,8 @@ const LoginCard = ({
               Email
             </label>
             <input
-              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
               className="w-full mt-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -59,6 +64,8 @@ const LoginCard = ({
             <div className="relative mt-1">
               <input
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full p-3 pr-16 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -89,13 +96,13 @@ const LoginCard = ({
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          {/* Google */}
+          {/* Google
           <button
             type="button"
             className="w-full border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition"
           >
             Continue with Google
-          </button>
+          </button> */}
 
           {/* Footer */}
           <p className="text-sm text-gray-500 text-center mt-6">
