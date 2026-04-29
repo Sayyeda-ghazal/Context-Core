@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql://postgres:yourpassword@localhost:5432/contextcore_db"
+DATABASE_URL = "postgresql://postgres:ghazaldb1@localhost:5432/contextcore_db"
 
 engine = create_engine(DATABASE_URL)
 
