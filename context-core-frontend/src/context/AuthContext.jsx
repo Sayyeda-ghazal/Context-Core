@@ -1,0 +1,34 @@
+import React, { createContext, useContext, useState } from "react";
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({children}) => {
+
+    // get token from browser storage when app starts
+    const [token, setToken] = useState(
+        localStorage.getItem("token") || null
+    );
+
+    // Login
+    const login = (newToken) => {
+        localStorage.setItem("token", newToken);
+        setToken(newToken);
+    };
+
+    const logout = () => {
+        localStorage.removeItem("token");
+        setToken(null);
+    };
+
+    return (<AuthContext.Provider
+    value={{
+        token,
+        login,
+        logout,
+        isAuthenticated: !!token,
+    }}> {children} </AuthContext.Provider>);
+};
+
+export const useAuth = () => {
+    return useContext(AuthContext);
+};

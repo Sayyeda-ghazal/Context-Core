@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import LoginCard from "../../Components/auth/LoginCard";
 import LeftPanel from "../../Components/auth/LeftPanel"
 import { loginUser } from "../../api/auth";
+import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
+  const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,12 +22,12 @@ const Login = () => {
     setError("");
 
     try {
-      const data = await loginUser(email, password)
+      const res = await loginUser({email, password});
       // store token
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", res.data.token);
 
-      // redirect(temporary)
-      window.location.href = "/";
+      // redirect to home page
+      navigate("/");
     } catch (err) {
       setError(
         err.response?.data?.detail ||

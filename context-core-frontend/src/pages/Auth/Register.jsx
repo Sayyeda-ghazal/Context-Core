@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom';
 import LeftPanel from '../../Components/auth/LeftPanel';
 import RegisterCard from '../../Components/auth/RegisterCard'
 import { registerUser } from '../../api/auth';
 
 export default function Register() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
 
   //Step - 1
@@ -20,7 +22,6 @@ export default function Register() {
   const handleContinue = async (e) =>{
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     //Simple Validation First
     if (!fullname || !email || !password || !confirmPassword){
@@ -34,40 +35,52 @@ export default function Register() {
       setLoading(false);
       return;
     }
+
+    if (!agreeTerms){
+      setError("Please accept Terms and Conditions");
+      return;
+    }
+    setLoading(true);
     try {
       await registerUser({
         fullname,
         email,
         password,
       });
-      // Step - 1 Complete Move to Step - 2
-      setStep(2);
+      // Redirect to verification sent page
+      window.location.href = '/verification-sent';
     } catch (err) {
-      setError(err.response?.data?.message || "Signup Failed")
+      // Handle different error response formats
+      const errorMessage = err.response?.data?.detail || 
+                           err.response?.data?.message || 
+                           err.response?.data?.error || 
+                           "Signup failed. Please check your input and try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
   
   return (
-    <div className='h-screen flex'>
-      <LeftPanel/>
+    <div className="h-screen flex">
+      <LeftPanel />
       <RegisterCard
-      step={step}
-      setStep={setStep}
-      agreeTerms={agreeTerms}
-      setAgreeTerms={setAgreeTerms}
-      fullname={fullname}
-      setFullname={setFullname}
-      email={email}
-      setEmail={setEmail}
-      password={password}
-      setPassword={setPassword}
-      confirmPassword={confirmPassword}
-      setConfirmPassword={setConfirmPassword}
-      loading={loading}
-      error={error}
-      handleContinue={handleContinue}/>
+        step={step}
+        setStep={setStep}
+        agreeTerms={agreeTerms}
+        setAgreeTerms={setAgreeTerms}
+        fullname={fullname}
+        setFullname={setFullname}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        loading={loading}
+        error={error}
+        handleContinue={handleContinue}
+      />
     </div>
   )
 }

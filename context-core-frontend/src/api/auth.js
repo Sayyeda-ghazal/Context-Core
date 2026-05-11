@@ -1,20 +1,22 @@
 import axios from "axios";
+import API from "../api/axios"
 
-const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
-});
-
-export const loginUser = async (email, password) => {
-  const res = await API.post("/auth/login", {
-    email,
-    password,
-  });
-
-  return res.data;
+// SIGNUP
+export const registerUser = (data) => {
+  return API.post("/auth/register", data);
 };
 
-export const registerUser = async (userData) => {
-  const res = await API.post("/auth/register", userData);
+// LOGIN
+export const loginUser = (data) => {
+  return API.post("/auth/login", data);
+};
 
-  return res.data;
+// FORGOT PASSWORD
+export const forgotPassword = (email) => {
+  return API.post("/auth/forgot-password", { email });
+};
+
+// RESET PASSWORD
+export const resetPassword = (data) => {
+  return API.post("/auth/reset-password", data);
 };

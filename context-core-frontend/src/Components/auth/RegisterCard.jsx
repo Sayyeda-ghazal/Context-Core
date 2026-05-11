@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from 'react-router-dom';
 
 const RegisterCard = ({
   step,
@@ -38,7 +39,7 @@ const RegisterCard = ({
   const strength = getPasswordStrength(password);
 
   return (
-    <div className="w-1/2 bg-white flex items-center justify-center px-12">
+    <div className="flex-1 bg-white flex items-center justify-center px-12">
       <div className="w-full max-w-lg">
 
         {/* Step Indicator */}
@@ -63,9 +64,9 @@ const RegisterCard = ({
           Start your ContextCore workspace in minutes.
         </p>
 
-        {/* Error */}
+        {/* Error/Success */}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-600 text-sm">
+          <div className={`mb-4 p-3 rounded-lg ${error.includes('successful') || error.includes('verified') ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} text-sm`}>
             {error}
           </div>
         )}
@@ -164,6 +165,17 @@ const RegisterCard = ({
             >
               {loading ? "Please wait..." : "Continue →"}
             </button>
+
+            {/* Footer */}
+            <p className="text-sm text-gray-500 text-center mt-6">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="text-blue-600 font-medium hover:underline"
+              >
+                Sign in →
+              </Link>
+            </p>
 
           </form>
         )}

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from 'react-router-dom';
 
 const LoginCard = ({
   showPassword,
@@ -107,12 +108,12 @@ const LoginCard = ({
           {/* Footer */}
           <p className="text-sm text-gray-500 text-center mt-6">
             Don’t have an account?{" "}
-            <a
-              href="/register"
+            <Link
+              to="/register"
               className="text-blue-600 font-medium hover:underline"
             >
               Start free →
-            </a>
+            </Link>
           </p>
 
         </form>
