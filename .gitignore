@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+
+# Backend
+contextcore-backend/venv/
+
+# Frontend
+context-core-frontend/node_modules/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
