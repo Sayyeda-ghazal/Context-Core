@@ -3,6 +3,9 @@ import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import VerifyEmail from "./pages/Auth/VerifyEmail";
 import VerificationSent from "./pages/Auth/VerificationSent";
+import ForgotPassword from './pages/Auth/Forgot Password';
+import ResetPassword from './pages/Auth/ResetPassword';
+import Dashboard from './pages/Dashboard/Dashboard';
 
 function App() {
   return (
@@ -11,6 +14,9 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/verification-sent" element={<VerificationSent />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path='/reset-password' element= {<ResetPassword/>}/>
+      <Route path='/dashboard/home' element={<Dashboard/>}/>
       <Route path="/*" element={<Login />} />
     </Routes>
   );

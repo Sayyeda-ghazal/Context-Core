@@ -1,96 +1,120 @@
 from fastapi import HTTPException
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
+import hashlib
+import logging
+
 from app.repositories.user_repository import get_user_by_email
 from app.models.user import User
 from app.services.email_service import send_reset_email, send_verification_email
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
-SECRET_KEY = "supersecretkey"
-ALGORITHM = "HS256"
+# ---------------- PASSWORD HASH ----------------
+def hash_password(password: str):
+    password_bytes = password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        password = password_bytes[:72].decode("utf-8", errors="ignore")
+
+    try:
+        return bcrypt.hash(password)
+    except Exception:
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
+# ---------------- TOKEN ----------------
+def create_token(subject: str, token_type: str, expires_in_minutes: int):
+    expire = datetime.utcnow() + timedelta(minutes=expires_in_minutes)
+
+    payload = {
+        "sub": str(subject),   # 👈 user.id (recommended)
+        "type": token_type,
+        "exp": expire
+    }
+
+    return jwt.encode(
+        payload,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
+    )
+
+
+def verify_token(token: str, expected_type: str):
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+
+        if payload.get("type") != expected_type:
+            raise Exception("Invalid token type")
+
+        return payload["sub"]
+
+    except JWTError:
+        raise Exception("Invalid or expired token")
+
+
+# ---------------- LOGIN ----------------
 def login_user(db: Session, data):
-    # check if user exists
-    existing_user = get_user_by_email(db, data.email)
 
-    if not existing_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Credentials"
-        )
+    user = get_user_by_email(db, data.email)
 
-    # check if user is verified
-    if not existing_user.is_verified:
-        raise HTTPException(
-            status_code=401,
-            detail="Email not verified. Please check your email and verify your account."
-        )
+    if not user:
+        raise HTTPException(401, "Invalid Credentials")
 
-    # verify password
-    if not bcrypt.verify(data.password, existing_user.password):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Credentials"
-        )
+    if not user.is_verified:
+        raise HTTPException(401, "Email not verified")
 
-    # generate JWT token
-    token = jwt.encode(
-        {
-            "sub": existing_user.email,
-            "exp": datetime.utcnow() + timedelta(hours=1)
-        },
-        SECRET_KEY,
-        algorithm=ALGORITHM
+    # password check
+    stored_password = user.password
+
+    if stored_password.startswith("$2b$") or stored_password.startswith("$2a$"):
+        if not bcrypt.verify(data.password, stored_password):
+            raise HTTPException(401, "Invalid Credentials")
+    else:
+        hashed_input = hashlib.sha256(
+            data.password.encode("utf-8")
+        ).hexdigest()
+
+        if hashed_input != stored_password:
+            raise HTTPException(401, "Invalid Credentials")
+
+    # ✅ JWT now uses USER ID
+    token = create_token(
+        subject=str(user.id),
+        token_type="access",
+        expires_in_minutes=60
     )
 
     return {
         "token": token,
         "user": {
-            "id": existing_user.id,
-            "fullname": existing_user.fullname,
-            "email": existing_user.email
+            "id": user.id,
+            "fullname": user.fullname,
+            "email": user.email
         }
     }
 
 
+# ---------------- REGISTER ----------------
 async def register_user(db: Session, data):
-    # check if user already exists
-    existing_user = get_user_by_email(db, data.email)
 
-    if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="User already exists"
-        )
+    existing = get_user_by_email(db, data.email)
 
-    # hash password with length validation
-    # bcrypt only supports up to 72 bytes, so truncate if necessary
-    password_bytes = data.password.encode('utf-8')
-    if len(password_bytes) > 72:
-        # Truncate to 72 bytes and decode back to string
-        truncated_password = password_bytes[:72].decode('utf-8', errors='ignore')
-        try:
-            hashed_password = bcrypt.hash(truncated_password)
-        except Exception as e:
-            # Fallback to simple hashing if bcrypt fails
-            import hashlib
-            hashed_password = hashlib.sha256(truncated_password.encode()).hexdigest()
-    else:
-        try:
-            hashed_password = bcrypt.hash(data.password)
-        except Exception as e:
-            # Fallback to simple hashing if bcrypt fails
-            import hashlib
-            hashed_password = hashlib.sha256(data.password.encode()).hexdigest()
+    if existing:
+        raise HTTPException(400, "User already exists")
 
-    # create user with is_verified=False
     new_user = User(
         fullname=data.fullname,
         email=data.email,
-        password=hashed_password,
+        password=hash_password(data.password),
         is_verified=False
     )
 
@@ -98,111 +122,61 @@ async def register_user(db: Session, data):
     db.commit()
     db.refresh(new_user)
 
-    # Generate verification token
-    verification_token = jwt.encode(
-        {
-            "sub": new_user.email,
-            "exp": datetime.utcnow() + timedelta(hours=24)
-        },
-        SECRET_KEY,
-        algorithm=ALGORITHM
+    verification_token = create_token(
+        subject=str(new_user.id),
+        token_type="email_verification",
+        expires_in_minutes=24 * 60
     )
 
-    # Send verification email
     try:
         await send_verification_email(new_user.email, verification_token)
     except Exception as e:
-        logger.error(f"Failed to send verification email during registration for {new_user.email}: {str(e)}")
-        # Don't fail registration if email fails - user can resend later
-        pass
+        logger.error(f"Email failed: {str(e)}")
 
     return {
-        "message": "Registration successful. Please check your email to verify your account.",
+        "message": "Registration successful",
         "user": {
             "id": new_user.id,
-            "fullname": new_user.fullname,
             "email": new_user.email
         }
     }
 
+
+# ---------------- FORGOT PASSWORD ----------------
 async def forgot_password(db: Session, data):
+
     user = get_user_by_email(db, data.email)
 
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found"
-        )
+        raise HTTPException(404, "User not found")
 
-    reset_token = jwt.encode(
-        {
-            "sub": user.email,
-            "exp": datetime.utcnow() + timedelta(minutes=30)
-        },
-        SECRET_KEY,
-        algorithm=ALGORITHM
+    reset_token = create_token(
+        subject=str(user.id),
+        token_type="password_reset",
+        expires_in_minutes=30
     )
 
-    try:
-        await send_reset_email(user.email, reset_token)
-    except Exception as e:
-        logger.error(f"Failed to send reset email for {user.email}: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to send password reset email. Please try again later."
-        )
+    await send_reset_email(user.email, reset_token)
 
-    return {
-        "message": "Password reset email sent successfully"
-    }
+    return {"message": "Password reset email sent"}
 
 
+# ---------------- RESET PASSWORD ----------------
 def reset_password(db: Session, data):
+
     try:
-        payload = jwt.decode(
-            data.token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
+        user_id = verify_token(data.token, "password_reset")
 
-        email = payload.get("sub")
+    except Exception:
+        raise HTTPException(400, "Invalid or expired token")
 
-    except:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or expired token"
-        )
-
-    user = get_user_by_email(db, email)
+    user = db.query(User).filter(User.id == int(user_id)).first()
 
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found"
-        )
+        raise HTTPException(404, "User not found")
 
-    # hash password with length validation
-    # bcrypt only supports up to 72 bytes, so truncate if necessary
-    password_bytes = data.new_password.encode('utf-8')
-    if len(password_bytes) > 72:
-        # Truncate to 72 bytes and decode back to string
-        truncated_password = password_bytes[:72].decode('utf-8', errors='ignore')
-        try:
-            user.password = bcrypt.hash(truncated_password)
-        except Exception as e:
-            # Fallback to simple hashing if bcrypt fails
-            import hashlib
-            user.password = hashlib.sha256(truncated_password.encode()).hexdigest()
-    else:
-        try:
-            user.password = bcrypt.hash(data.new_password)
-        except Exception as e:
-            # Fallback to simple hashing if bcrypt fails
-            import hashlib
-            user.password = hashlib.sha256(data.new_password.encode()).hexdigest()
+    user.password = hash_password(data.new_password)
 
     db.commit()
 
-    return {
-        "message": "Password reset successfully"
-    }
+    return {"message": "Password reset successful"}

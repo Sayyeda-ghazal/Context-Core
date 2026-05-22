@@ -17,6 +17,8 @@ npm install react-router-dom
 <!-- Activating Virtual Environment for Backend -->
 cd contextcore-backend
 source venv/bin/activate
+alembic upgrade head
+python3 scripts/seed_dummy_data.py
 python3 -m uvicorn app.main:app --reload
 
 

@@ -1,6 +1,6 @@
 import logging
 from fastapi_mail import FastMail, MessageSchema
-from app.core.email import conf
+from app.core.email import get_mail_conf
 from jose import jwt
 from datetime import datetime, timedelta
 
@@ -26,7 +26,7 @@ async def send_reset_email(email: str, token: str):
     )
 
     try:
-        fm = FastMail(conf)
+        fm = FastMail(get_mail_conf())
         await fm.send_message(message)
         logger.info(f"Password reset email sent successfully to {email}")
         return {"success": True, "message": "Password reset email sent successfully"}
@@ -54,7 +54,7 @@ async def send_verification_email(email: str, token: str):
     )
 
     try:
-        fm = FastMail(conf)
+        fm = FastMail(get_mail_conf())
         await fm.send_message(message)
         logger.info(f"Verification email sent successfully to {email}")
         return {"success": True, "message": "Verification email sent successfully"}

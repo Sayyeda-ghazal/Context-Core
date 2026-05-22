@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import LeftPanel from '../../Components/auth/LeftPanel';
 import RegisterCard from '../../Components/auth/RegisterCard'
 import { registerUser } from '../../api/auth';
+import formatApiError from "../../api/formatApiError";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -50,12 +51,7 @@ export default function Register() {
       // Redirect to verification sent page
       window.location.href = '/verification-sent';
     } catch (err) {
-      // Handle different error response formats
-      const errorMessage = err.response?.data?.detail || 
-                           err.response?.data?.message || 
-                           err.response?.data?.error || 
-                           "Signup failed. Please check your input and try again.";
-      setError(errorMessage);
+      setError(formatApiError(err, "Signup failed. Please check your input and try again."));
     } finally {
       setLoading(false);
     }

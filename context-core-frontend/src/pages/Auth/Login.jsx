@@ -4,6 +4,7 @@ import LoginCard from "../../Components/auth/LoginCard";
 import LeftPanel from "../../Components/auth/LeftPanel"
 import { loginUser } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
+import formatApiError from "../../api/formatApiError";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,12 +28,9 @@ const Login = () => {
       localStorage.setItem("token", res.data.token);
 
       // redirect to home page
-      navigate("/");
+      navigate("/dashboard/home");
     } catch (err) {
-      setError(
-        err.response?.data?.detail ||
-        "Invalid paswword or email. Please try again."
-      );
+      setError(formatApiError(err, "Invalid password or email. Please try again."));
       } finally {
         setLoading(false);
     }

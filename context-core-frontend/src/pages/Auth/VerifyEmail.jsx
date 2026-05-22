@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import API from '../../api/axios';
+import formatApiError from "../../api/formatApiError";
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -21,11 +22,7 @@ const VerifyEmail = () => {
         setSuccess(true);
       } catch (err) {
         console.log("ERROR:", err);
-        setError(
-          err.response?.data?.detail || 
-          err.response?.data?.message || 
-          'Failed to verify email. Please try again.'
-        );
+        setError(formatApiError(err, "Failed to verify email. Please try again."));
       } finally {
         console.log("Finally reached");
         setLoading(false);
