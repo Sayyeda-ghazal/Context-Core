@@ -90,7 +90,7 @@ def login_user(db: Session, data):
     token = create_token(
         subject=str(user.id),
         token_type="access",
-        expires_in_minutes=60
+        expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
     return {

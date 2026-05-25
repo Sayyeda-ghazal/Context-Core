@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:8000/api", // Backend runs on port 8000
+  withCredentials: true, // send HttpOnly auth cookie
 });
 
 // Add request and response interceptors for debugging
@@ -31,15 +32,5 @@ API.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// 🔥 Interceptor (runs BEFORE every request)
-API.interceptors.request.use((config) => {
-    const token=localStorage.getItem("token");
-
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
 
 export default API;

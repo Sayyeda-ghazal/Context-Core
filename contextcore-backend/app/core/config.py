@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str = Field(default="CHANGE_ME")
     ALGORITHM: str = Field(default="HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
+
+    # Auth cookie (HttpOnly)
+    ACCESS_TOKEN_COOKIE_NAME: str = Field(default="access_token")
+    AUTH_COOKIE_SECURE: bool = Field(default=False)  # set True behind HTTPS
+    AUTH_COOKIE_SAMESITE: str = Field(default="lax")  # "lax" | "strict" | "none"
+    AUTH_COOKIE_DOMAIN: str | None = Field(default=None)
+    AUTH_COOKIE_PATH: str = Field(default="/")
 
 
 settings = Settings()

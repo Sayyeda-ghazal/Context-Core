@@ -8,6 +8,7 @@ import formatApiError from "../../api/formatApiError";
 
 const Login = () => {
   const navigate = useNavigate();
+  const auth = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,9 +24,8 @@ const Login = () => {
     setError("");
 
     try {
-      const res = await loginUser({email, password});
-      // store token
-      localStorage.setItem("token", res.data.token);
+      await loginUser({email, password});
+      await auth.login();
 
       // redirect to home page
       navigate("/dashboard/home");

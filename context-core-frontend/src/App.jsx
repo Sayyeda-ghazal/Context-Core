@@ -6,6 +6,7 @@ import VerificationSent from "./pages/Auth/VerificationSent";
 import ForgotPassword from './pages/Auth/Forgot Password';
 import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
+import RequireAuth from "./Components/auth/RequireAuth";
 
 function App() {
   return (
@@ -16,7 +17,14 @@ function App() {
       <Route path="/verification-sent" element={<VerificationSent />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path='/reset-password' element= {<ResetPassword/>}/>
-      <Route path='/dashboard/home' element={<Dashboard/>}/>
+      <Route
+        path="/dashboard/home"
+        element={
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        }
+      />
       <Route path="/*" element={<Login />} />
     </Routes>
   );

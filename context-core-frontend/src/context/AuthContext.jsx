@@ -1,32 +1,53 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { getMe, logoutUser } from "../api/auth";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({children}) => {
 
-    // get token from browser storage when app starts
-    const [token, setToken] = useState(
-        localStorage.getItem("token") || null
-    );
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Login
-    const login = (newToken) => {
-        localStorage.setItem("token", newToken);
-        setToken(newToken);
+    const refresh = async () => {
+        try {
+            const res = await getMe();
+            setUser(res.data.user ?? null);
+        } catch {
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const logout = () => {
-        localStorage.removeItem("token");
-        setToken(null);
+    useEffect(() => {
+        refresh();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Login: cookie is set by backend; call refresh after login completes
+    const login = async () => {
+        await refresh();
     };
 
-    return (<AuthContext.Provider
-    value={{
-        token,
+    const logout = async () => {
+        try {
+            await logoutUser();
+        } finally {
+            setUser(null);
+        }
+    };
+
+    const value = useMemo(() => ({
+        user,
         login,
         logout,
-        isAuthenticated: !!token,
-    }}> {children} </AuthContext.Provider>);
+        refresh,
+        loading,
+        isAuthenticated: !!user,
+    }), [user, loading]);
+
+    return (<AuthContext.Provider
+    value={value}> {children} </AuthContext.Provider>);
 };
 
 export const useAuth = () => {

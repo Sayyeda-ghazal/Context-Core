@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.schemas.auth import (
@@ -19,6 +19,8 @@ from app.services.auth_services import (
 from app.repositories.user_repository import get_user_by_email
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.security import get_current_user
+from app.models.user import User
 
 
 router = APIRouter()
@@ -31,9 +33,50 @@ router = APIRouter()
 @router.post("/login")
 def login(
     data: LoginRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
-    return login_user(db, data)
+    result = login_user(db, data)
+    token = result.get("token")
+
+    if token:
+        response.set_cookie(
+            key=settings.ACCESS_TOKEN_COOKIE_NAME,
+            value=token,
+            httponly=True,
+            secure=settings.AUTH_COOKIE_SECURE,
+            samesite=settings.AUTH_COOKIE_SAMESITE,
+            domain=settings.AUTH_COOKIE_DOMAIN,
+            path=settings.AUTH_COOKIE_PATH,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+
+    # Intentionally omit the token from the JSON body to discourage storage in JS.
+    return {
+        "user": result.get("user"),
+        "message": "Login successful",
+    }
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key=settings.ACCESS_TOKEN_COOKIE_NAME,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        path=settings.AUTH_COOKIE_PATH,
+    )
+    return {"message": "Logged out"}
+
+
+@router.get("/me")
+def me(current_user: User = Depends(get_current_user)):
+    return {
+        "user": {
+            "id": current_user.id,
+            "fullname": current_user.fullname,
+            "email": current_user.email,
+        }
+    }
 
 
 # =========================
